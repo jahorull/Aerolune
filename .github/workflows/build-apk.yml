@@ -1,0 +1,92 @@
+
+name: Build AEROLUNE Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: "Public AEROLUNE URL copied from Visit"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK components
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Build web project
+        run: |
+          npm install
+          npm run build
+
+      - name: Install Capacitor
+        run: |
+          npm install --no-save --package-lock=false @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+
+      - name: Configure app URL
+        env:
+          APP_URL: ${{ inputs.app_url }}
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+
+          const url = new URL(process.env.APP_URL);
+          if (url.protocol !== 'https:') {
+            throw new Error('Use a public HTTPS app URL');
+          }
+
+          const config = {
+            appId: 'com.jahorull.aerolune',
+            appName: 'AEROLUNE',
+            webDir: 'dist',
+            server: {
+              url: url.href,
+              cleartext: false
+            }
+          };
+
+          fs.writeFileSync(
+            'capacitor.config.json',
+            JSON.stringify(config, null, 2)
+          );
+          NODE
+
+      - name: Create Android project
+        run: npx cap add android
+
+      - name: Build debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AEROLUNE-APK
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          
