@@ -1,0 +1,6 @@
+{
+  "name": "AEROLUNE — 3D & AI Weather Super-App",
+  "description": "Next-generation 3D meteorological telemetry, Time Machine radar, Living Weather City diorama, and strictly grounded bilingual (Bengali & English) Gemini AI weather intelligence.",
+  "requestFramePermissions": ["camera", "microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
